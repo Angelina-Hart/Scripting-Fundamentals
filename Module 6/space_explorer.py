@@ -60,39 +60,49 @@ def get_unique_objects(galaxy_map):
 
 
 def symbols_not_used_in_galaxy(symbols_in_galaxy):
-    # insert your code here
+    not_used = set()
+    for symbol in all_possible_symbols:
+        if symbol not in symbols_in_galaxy:
+            not_used.add(symbol)
+    return frozenset(not_used)
     pass
 
 
 def common_objects_encountered(galaxy_1_objects, galaxy_2_objects):
-    # insert your code here
+    result = galaxy_1_objects.intersection(galaxy_2_objects)
+    return result
     pass
 
 
 def objects_encountered_in_galaxy1_not_galaxy2(galaxy_1_objects, galaxy_2_objects):
-    # insert your code here
+    result = galaxy_1_objects.difference(galaxy_2_objects)
+    return result
     pass
 
 
 def objects_encountered_in_galaxy2_not_galaxy1(galaxy_1_objects, galaxy_2_objects):
-    # insert your code here
+    result = galaxy_2_objects.difference(galaxy_1_objects)
+    return result
     pass
 
 
 def objects_encountered_in_both_galaxys(galaxy1_objects, galaxy2_objects):
-    # insert your code here
+    result = galaxy1_objects.union(galaxy2_objects)
+    return result
     pass
 
 
 def calculate_path_to_goal(sorted_object_list):
     objects_of_interest = []
     for item in sorted_object_list:
-        if item[2] == ["T"] or item[2] == ["F"]:
-            objects_of_interest.append(item)
-        elif item[2] == ["G"]:
-            objects_of_interest.append(item)
+        if item[2] != ['G']:
+            if item[2] == ['F'] or item[2] == ['T']:
+                objects_of_interest.append(item)
+            else:
+                continue
         else:
-            continue
+            objects_of_interest.append(item)
+            break
     return objects_of_interest
     pass
 
@@ -123,15 +133,14 @@ def populate_galaxy_map(available_symbols, available_coordinates, occupied_coord
         distance = calculate_euclidean_distance(coordinates)
         # insert your code here
         objects_encountered_list.append((distance, coordinates, symbol))
+        galaxy_map.update({coordinates: symbol[0]})
         if symbol == ["G"]:
             break
-        else:
-            galaxy_map.update({coordinates: symbol[0]})
+            
     # insert your code here
     objects_encountered_list = sorted(objects_encountered_list)
     return objects_encountered_list
     pass
-
 
 
 def run_exploration():
@@ -164,6 +173,9 @@ def run_exploration():
     print(galaxy1_symbols)
     print(galaxy2_symbols)
 
+
+if __name__ == '__main__':
+    run_exploration()
 
 if __name__ == '__main__':
     run_exploration()
