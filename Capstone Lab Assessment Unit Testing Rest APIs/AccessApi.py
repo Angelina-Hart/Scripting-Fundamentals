@@ -1,132 +1,103 @@
-import AccessApi as mws
-import pytest
-
-#base_url: str = "https://raw.githubusercontent.com/bclipp/"
-base_url: str = "https://raw.githubusercontent.com/cengage-ide-content/"
-billing_end_point: str = "APItesting/master/getBillingInfo.json"
-customer_end_point: str = "APItesting/master/getCustomers.json"
-site_end_point: str = "APItesting/master/getSites.json"
-
-# TASK 2
-
-# billing
-def test_billing_status_code(base_url: str, end_point: str):
-    url = mws.AccessApi(base_url)
-    status_code = url.get_status_code(billing_end_point)
-    assert status_code == 200
-
-def test_billing_validate_schema():
-    url = mws.AccessApi(base_url)
-    billing_text = url.get_end_point(billing_end_point)
-    k = ['id', 'FirstName', 'LastName', 'city', 'state', 'Lang', 'SSN']
-    for pair in billing_text:
-        assert list(pair.keys()) == k
-        for item in pair.items():
-            if item[0] == 'id':
-                assert type(item[1]) is int
-            else:
-                assert type(item[1]) is str
-
-def test_billing_validate_ssn():
-    url = mws.AccessApi(base_url)
-    billing_text = url.get_end_point(billing_end_point)
-    for each in billing_text:
-        ssn = each.get('SSN')
-        onlynum = ssn.replace('-', '')
-        assert ssn.index('-') == 3
-        assert ssn.rindex('-') == 6
-        assert onlynum.isdecimal() == True
-    return True
-
-def test_billing_validate_time():
-    url = mws.AccessApi(base_url)
-    elapsed_time = url.get_elapsed_time(billing_end_point)
-    assert elapsed_time < 1
+import requests
+import json
 
 
-# customers
-def test_customers_status_code():
-    url = mws.AccessApi(base_url)
-    status_code = url.get_status_code(customer_end_point)
-    assert status_code == 200
+class AccessApi:
+    """
+    Class AccessApi is used to abstract lower level access to course required API
 
-def test_customers_validate_schema():
-    url = mws.AccessApi(base_url)
-    customers_text = url.get_end_point(customer_end_point)
-    k = ['id', 'first_name', 'last_name', 'email', 'ip_address', 'address']
-    for pair in customers_text:
-        assert list(pair.keys()) == k
-        for item in pair.items():
-            if item[0] == 'id':
-                assert type(item[1]) is int
-            else:
-                assert type(item[1]) is str
+    Attributes
+    ----------
+    url : str
+        A valid website used to hold the courses json filesS
 
-def test_customers_validate_ssn():
-    url = mws.AccessApi(base_url)
-    customers_text = url.get_end_point(customer_end_point)
-    for each in customers_text:
-        email = each.get('email')
-        email_username = email.split('@', 1)[0]
-        email_service = email.split('@', 1)[1]
-        assert email.count('@') == 1
-        #assert email_service.count('.') == 1
-        #assert email_service.index('.') == -4
-        assert type(email) == str
-    return True
+    Methods
+    -------
+    url_active()
+        returns True if the url is currently responding without errors, and False if not.
 
-def test_customers_validate_time():
-    url = mws.AccessApi(base_url)
-    elapsed_time = url.get_elapsed_time(customer_end_point)
-    assert elapsed_time < 1
+    get_end_point(endpoint)
+        returns the json output of the GET request
 
-# site
-def test_site_status_code():
-    url = mws.AccessApi(base_url)
-    status_code = url.get_status_code(site_end_point)
-    assert status_code == 200
+    """
+    def __init__(self, url):
+        """
+        Parameters
+        ----------
+        url: str
+           a valid website forexample: http://google.com
+        """
+        self.url = url
+        
 
-def test_site_validate_schema():
-    url = mws.AccessApi(base_url)
-    site_text = url.get_end_point(site_end_point)
-    k = ['id', 'address', 'ThirdParty', 'admin']
-    for pair in site_text:
-        assert list(pair.keys()) == k
-        for item in pair.items():
-            if item[0] == 'id':
-                assert type(item[1]) is int
-            else:
-                assert type(item[1]) is str
-
-def test_site_validate_ssn():
-    url = mws.AccessApi(base_url)
-    site_text = url.get_end_point(site_end_point)
-    for each in site_text:
-        id = each.get('id')
-        assert type(id) == int
-    return True
-
-def test_site_validate_time():
-    url = mws.AccessApi(base_url)
-    elapsed_time = url.get_elapsed_time(site_end_point)
-    assert elapsed_time < 1
+    @property
+    def url(self) -> str:
+        return self._url
 
 
-# task 3
-@pytest.mark.parametrize('base_url', [base_url])
-@pytest.mark.parametrize('end_point', [billing_end_point, customer_end_point, site_end_point])
+    @url.setter
+    def url(self, url: str):
+        self._url = url
+        
 
-def test_billing_status_code(base_url, end_point):
-    url = mws.AccessApi(base_url)
-    for point in end_point:
-        status_code = url.get_status_code(end_point)
-        assert status_code == 200
+    def url_active(self) -> bool:
+        response = requests.get(self.url)
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            return False
+        return True
+        
+       
+    def get_end_point(self, end_point:str) -> dict:
+        """
+            Parameters
+            ----------
+            end_point: str
+               a valid endpoint on a website  "api/sites/master.json"
+        """
+        new_url = self.url + end_point
+        got_file = requests.get(new_url)
+        file_text = json.loads(got_file.text)
+        return file_text
+        
+      
+    def get_status_code(self, end_point:str) -> int:
+        """
+            Parameters
+            ----------
+            end_point: str
+               a valid endpoint on a website  "api/sites/master.json"
+        """
+        new_url = self.url + end_point
+        got_file = requests.get(new_url)
+        return got_file.status_code
 
-@pytest.mark.parametrize('base_url', [base_url])
-@pytest.mark.parametrize('end_point',[billing_end_point,customer_end_point,site_end_point])
 
-def test_billing_validate_time(base_url, end_point):
-    url = mws.AccessApi(base_url)
-    for point in end_point:
-        elapsed_time = url.get_elapsed_time(end_point)
-        assert elapsed_time < 1
+    def get_elapsed_time(self, end_point:str) -> float:
+        """
+            Parameters
+            ----------
+            end_point: str
+               a valid endpoint on a website  "api/sites/master.json"
+        """
+        new_url = self.url + end_point
+        got_file = requests.get(new_url)
+        return got_file.elapsed.total_seconds()
+
+
+"""
+Test Code:
+
+reference = AccessApi("https://raw.githubusercontent.com/cengage-ide-content/")
+
+reference.url_active()
+
+end_point = "APItesting/main/getBillingInfo.json"
+
+reference.get_end_point(end_point)
+
+print(reference.get_status_code(end_point))
+
+print(reference.get_elapsed_time(end_point))
+"""
